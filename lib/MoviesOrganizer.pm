@@ -58,6 +58,7 @@ has '_filter_words' => (
     is => 'ro',
     default => sub {[qw/
             french
+            english
             x264
             720p
             1080p
@@ -67,6 +68,8 @@ has '_filter_words' => (
             divx
             bdrip
             xvid
+            brrip
+            ac3
     /]},
 );
 
