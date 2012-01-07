@@ -1,6 +1,13 @@
 #!/usr/bin/env perl
+
+# PODNAME: movies_organizer
+# ABSTRACT: organize your movie specialy for boxee
+
 use strict;
 use warnings;
+
+# VERSION
+
 use MoviesOrganizer;
 use Carp;
 use Data::Dumper;

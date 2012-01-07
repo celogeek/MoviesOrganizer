@@ -1,6 +1,12 @@
 package MoviesOrganizer;
+
+# ABSTRACT: Organize your movie using imdb
+
 use strict;
 use warnings;
+
+# VERSION
+
 use Moo;
 use MooX::Options;
 use File::Path 'make_path';
