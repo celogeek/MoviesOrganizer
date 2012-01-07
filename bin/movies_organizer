@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+use strict;
+use warnings;
+use MoviesOrganizer;
+use Carp;
+use Data::Dumper;
+use Term::ReadLine;
+use 5.014;
+use IMDB::Film;
+
+my $organizer = MoviesOrganizer->new_with_options;
+
+my $term = Term::ReadLine->new;
+for my $movie($organizer->find_movies()) {
+    say "";
+    say "Organize : $movie";
+    my $imdb;
+    while(!defined $imdb) {
+        my $imdb_search = $term->readline("IMDB Search > ", $organizer->filter_title($movie));
+        $imdb = $organizer->fetch_movie($imdb_search);
+        $imdb = undef if !$imdb->status;
+        if ($imdb) {
+            say "Movie    : ", $imdb->title;
+            say "Aka      : ", join(', ',@{$imdb->also_known_as});
+            say "Kind     : ", $imdb->kind;
+            say "Year     : ", $imdb->year;
+            say "Plot     : ", $imdb->plot;
+            say "Cast     : ", join(', ',map { $_->{name}."(".$_->{role}.")"} @{$imdb->cast});
+            say "Duration : ", $imdb->duration;
+            say "Language : ", join(', ',@{$imdb->language});
+            say "";
+            my $correct = $term->readline("Is it correct ? (Y/n) > ","y");
+            $imdb = undef unless $correct eq 'y';
+        }
+    }
+    my $movie_title = $imdb->title;
+    my @movie_titles = ($imdb->title, @{$imdb->also_known_as});
+    if (@movie_titles > 1) {
+        my $choice;
+        say "Select best title : ";
+        for(my $i=1; $i <= @movie_titles; $i++) {
+            say sprintf("    %d) %s",$i,$movie_titles[$i-1]);
+        }
+        while(!defined $choice) {
+            $choice = $term->readline(" > ");
+            $choice = undef if $choice =~ /\D/ || $choice < 1 || $choice > @movie_titles;
+        }
+        $movie_title = $movie_titles[$choice-1];
+        say "";
+    }
+
+    $organizer->move_movie($movie, $imdb, $movie_title);
+}
