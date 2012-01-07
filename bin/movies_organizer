@@ -49,12 +49,12 @@ for my $movie($organizer->find_movies()) {
             say sprintf("    %d) %s",$i,$movie_titles[$i-1]);
         }
         while(!defined $choice) {
-            $choice = $term->readline(" > ");
+            $choice = $term->readline(" > ", 1);
             $choice = undef if $choice =~ /\D/ || $choice < 1 || $choice > @movie_titles;
         }
         $movie_title = $movie_titles[$choice-1];
         say "";
     }
 
-    $organizer->move_movie($movie, $imdb, $movie_title);
+    $organizer->move_movie($term, $movie, $imdb, $movie_title);
 }

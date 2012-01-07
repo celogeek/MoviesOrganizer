@@ -16,6 +16,7 @@ use Data::Dumper;
 use File::Glob ':globally';
 use File::Spec;
 use File::Copy;
+use Term::ReadLine;
 
 option 'from' => (
     doc => 'Source directory to organize',
@@ -110,7 +111,7 @@ sub fetch_movie {
 }
 
 sub move_movie {
-    my ($self, $file, $imdb, $title) = @_;
+    my ($self, $term, $file, $imdb, $title) = @_;
     my ($volume, $dir, $movie) = File::Spec->splitpath($file);
 
     #extract ext
@@ -118,7 +119,9 @@ sub move_movie {
     $ext = "avi" unless defined $ext;
 
     #fix title space
-    $title =~ s/\s(\w)/.\u$1/g; #replace space by dot
+    $title =~ s/\W+/ /g;
+    $title =~ s/^\s+|\s+$//g;
+    $title =~ s/\s+(\w)/.\u$1/g; #replace space by dot
 
     #create destination
     my $dest = File::Spec->catfile($self->to, ucfirst($imdb->kind));
@@ -136,6 +139,8 @@ sub move_movie {
     say "Moving  : ";
     say "   From : ", $file;
     say "   To   : ", $fdest;
+
+    exit unless $term->readline('Continue (Y/n) ? > ','y') eq 'y';
     
     move($file, $fdest);
     croak "Error occur !" if -e $file || ! -e $fdest;
