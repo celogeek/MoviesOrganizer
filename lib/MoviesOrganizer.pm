@@ -167,6 +167,22 @@ sub move_movie {
     
     move($file, $fdest);
     croak "Error occur !" if -e $file || ! -e $fdest;
+
+    $file =~ s/\.[^\.]+$/.srt/;
+    $fdest =~ s/\.[^\.]+$/.srt/;
+
+    if (-e $file) {
+
+        say "Moving  : ";
+        say "   From : ", $file;
+        say "   To   : ", $fdest;
+
+        exit unless $term->readline('Continue (Y/n) ? > ','y') eq 'y';
+
+        move($file, $fdest);
+        croak "Error occur !" if -e $file || ! -e $fdest;
+
+    }
 }
 
 1;
