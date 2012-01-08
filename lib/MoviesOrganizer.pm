@@ -111,8 +111,15 @@ sub fetch_movie {
 }
 
 sub move_movie {
-    my ($self, $term, $file, $imdb, $title) = @_;
+    my ($self, $term, $file, $imdb, $title, $season, $episode) = @_;
     my ($volume, $dir, $movie) = File::Spec->splitpath($file);
+    my ($season_part, $episode_part);
+    my $is_series = $imdb->kind eq 'tv series';
+
+    if ($is_series) {
+        $season_part = sprintf("S%02d",$season);
+        $episode_part = sprintf("E%02d",$episode);
+    }
 
     #extract ext
     my ($ext) = $movie =~ m/\.([^\.+])$/;
@@ -123,8 +130,12 @@ sub move_movie {
     $title =~ s/^\s+|\s+$//g;
     $title =~ s/\s+(\w)/.\u$1/g; #replace space by dot
 
+
     #create destination
     my $dest = File::Spec->catfile($self->to, ucfirst($imdb->kind));
+    if ($is_series) {
+        $dest = File::Spec->catfile($dest, $title, $season_part)
+    }
     make_path($dest, {error => \my $err});
     if (@$err) {
         for my $diag(@$err) {
@@ -134,7 +145,12 @@ sub move_movie {
     }
 
     #build final filename
-    my $fdest = File::Spec->catfile($dest, join('.', $title, "(".$imdb->year.")", $ext));
+    if ($is_series) {
+        $ext = join('.',$season_part.$episode_part,$ext);
+    } else {
+        $ext = join('.', "(".$imdb->year.")",$ext);
+    }
+    my $fdest = File::Spec->catfile($dest, join('.', $title, $ext));
 
     say "Moving  : ";
     say "   From : ", $file;

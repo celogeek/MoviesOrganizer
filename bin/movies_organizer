@@ -18,43 +18,68 @@ use IMDB::Film;
 my $organizer = MoviesOrganizer->new_with_options;
 
 my $term = Term::ReadLine->new;
+my ($imdb, $movie_title, $season, $episode);
 for my $movie($organizer->find_movies()) {
     say "";
     say "Organize : $movie";
-    my $imdb;
-    while(!defined $imdb) {
-        my $imdb_search = $term->readline("IMDB Search > ", $organizer->filter_title($movie));
-        $imdb = $organizer->fetch_movie($imdb_search);
-        $imdb = undef if !$imdb->status;
-        if ($imdb) {
-            say "Movie    : ", $imdb->title;
-            say "Aka      : ", join(', ',@{$imdb->also_known_as});
-            say "Kind     : ", $imdb->kind;
-            say "Year     : ", $imdb->year;
-            say "Plot     : ", $imdb->plot;
-            say "Cast     : ", join(', ',map { $_->{name}."(".$_->{role}.")"} @{$imdb->cast});
-            say "Duration : ", $imdb->duration;
-            say "Language : ", join(', ',@{$imdb->language});
+    my $another_episode;
+    if (defined $imdb && $imdb->kind eq 'tv series') {
+        if ($term->readline("is it another episode of ".$movie_title." ? (Y/n) > ", "y") eq "y") {
+            $another_episode = 1;
             say "";
-            my $correct = $term->readline("Is it correct ? (Y/n) > ","y");
-            $imdb = undef unless $correct eq 'y';
         }
     }
-    my $movie_title = $imdb->title;
-    my @movie_titles = ($imdb->title, @{$imdb->also_known_as});
-    if (@movie_titles > 1) {
-        my $choice;
-        say "Select best title : ";
-        for(my $i=1; $i <= @movie_titles; $i++) {
-            say sprintf("    %d) %s",$i,$movie_titles[$i-1]);
+    if (!$another_episode) {
+        while(!defined $imdb) {
+            my $imdb_search = $term->readline("IMDB Search > ", $organizer->filter_title($movie));
+            $imdb = $organizer->fetch_movie($imdb_search);
+            $imdb = undef if !$imdb->status;
+            if ($imdb) {
+                say "Movie    : ", $imdb->title;
+                say "Aka      : ", join(', ',@{$imdb->also_known_as});
+                say "Kind     : ", $imdb->kind;
+                say "Year     : ", $imdb->year;
+                say "Plot     : ", $imdb->plot;
+                say "Cast     : ", join(', ',map { $_->{name}."(".$_->{role}.")"} @{$imdb->cast});
+                say "Duration : ", $imdb->duration;
+                say "Language : ", join(', ',@{$imdb->language});
+                say "";
+                my $correct = $term->readline("Is it correct ? (Y/n) > ","y");
+                $imdb = undef unless $correct eq 'y';
+            }
         }
-        while(!defined $choice) {
-            $choice = $term->readline(" > ", 1);
-            $choice = undef if $choice =~ /\D/ || $choice < 1 || $choice > @movie_titles;
+        $movie_title = $imdb->title;
+        my @movie_titles = ($imdb->title, @{$imdb->also_known_as});
+        if (@movie_titles > 1) {
+            my $choice;
+            say "Select best title : ";
+            for(my $i=1; $i <= @movie_titles; $i++) {
+                say sprintf("    %d) %s",$i,$movie_titles[$i-1]);
+            }
+            while(!defined $choice) {
+                $choice = $term->readline(" > ", 1);
+                $choice = undef if $choice =~ /\D/ || $choice < 1 || $choice > @movie_titles;
+            }
+            $movie_title = $movie_titles[$choice-1];
+            say "";
         }
-        $movie_title = $movie_titles[$choice-1];
-        say "";
+    }
+    if ($imdb->kind eq 'tv series') {
+        while (!defined $season || !defined $episode) {
+            $season = $term->readline("Season ? > ",$season);
+            $episode = $term->readline("Episode ? > ");
+            if ($season =~ /\D/ || $episode =~ /\D/ || $season < 1 || $episode < 1) {
+                say "Please, use only positive numeric values !";
+                say "";
+                $season = $episode = undef;
+                next;
+            }
+            if (!$term->readline("is it season ".$season." episode ".$episode." ? (Y/n) > ","y") eq "y") {
+                $season = $episode = undef;
+            }
+        }
     }
 
-    $organizer->move_movie($term, $movie, $imdb, $movie_title);
+    $organizer->move_movie($term, $movie, $imdb, $movie_title, $season, $episode);
+    $episode = undef;
 }
