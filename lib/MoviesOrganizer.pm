@@ -71,6 +71,13 @@ has '_filter_words' => (
             xvid
             brrip
             ac3
+            multi
+            truefrench
+            dts
+            hdma
+            hdtv
+            hdrip
+            m2ts
     /]},
 );
 
