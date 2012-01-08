@@ -23,11 +23,11 @@ for my $movie($organizer->find_movies()) {
     say "";
     say "Organize : $movie";
     my $another_episode;
-    if (defined $imdb && $imdb->kind eq 'tv series') {
-        if ($term->readline("is it another episode of ".$movie_title." ? (Y/n) > ", "y") eq "y") {
-            $another_episode = 1;
-            say "";
-        }
+    if (defined $imdb && $imdb->kind eq 'tv series' && $term->readline("is it another episode of ".$movie_title." ? (Y/n) > ", "y") eq "y") {
+        $another_episode = 1;
+        say "";
+    } else {
+        $imdb = undef;
     }
     if (!$another_episode) {
         while(!defined $imdb) {
@@ -40,7 +40,9 @@ for my $movie($organizer->find_movies()) {
                 say "Kind     : ", $imdb->kind;
                 say "Year     : ", $imdb->year;
                 say "Plot     : ", $imdb->plot;
+                say "Directory: ", join(', ',map { $_->{name} } @{$imdb->directors});
                 say "Cast     : ", join(', ',map { $_->{name}."(".$_->{role}.")"} @{$imdb->cast});
+                say "Genre    : ", join(', ',@{$imdb->genres});
                 say "Duration : ", $imdb->duration;
                 say "Language : ", join(', ',@{$imdb->language});
                 say "";
