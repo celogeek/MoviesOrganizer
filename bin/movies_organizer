@@ -67,9 +67,11 @@ for my $movie($organizer->find_movies()) {
         }
     }
     if ($imdb->kind eq 'tv series') {
-        while (!defined $season || !defined $episode) {
+        my $ok = 0;
+        while (!$ok || !defined $season || !defined $episode) {
+            $ok++;
             $season = $term->readline("Season ? > ",$season);
-            $episode = $term->readline("Episode ? > ");
+            $episode = $term->readline("Episode ? > ",$episode);
             if ($season =~ /\D/ || $episode =~ /\D/ || $season < 1 || $episode < 1) {
                 say "Please, use only positive numeric values !";
                 say "";
@@ -83,5 +85,5 @@ for my $movie($organizer->find_movies()) {
     }
 
     $organizer->move_movie($term, $movie, $imdb, $movie_title, $season, $episode);
-    $episode = undef;
+    $episode++ if defined $episode;
 }
