@@ -129,7 +129,7 @@ sub move_movie {
     }
 
     #extract ext
-    my ($ext) = $movie =~ m/\.([^\.+])$/;
+    my ($ext) = $movie =~ m/\.([^\.]+)$/;
     $ext = "avi" unless defined $ext;
 
     #fix title space
