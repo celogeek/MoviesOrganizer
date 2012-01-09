@@ -121,7 +121,7 @@ sub move_movie {
     my ($self, $term, $file, $imdb, $title, $season, $episode) = @_;
     my ($volume, $dir, $movie) = File::Spec->splitpath($file);
     my ($season_part, $episode_part);
-    my $is_series = $imdb->kind eq 'tv series';
+    my $is_series = $imdb->kind =~ /series/;
 
     if ($is_series) {
         $season_part = sprintf("S%02d",$season);
