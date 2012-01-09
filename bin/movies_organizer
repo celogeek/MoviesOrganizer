@@ -72,14 +72,14 @@ for my $movie($organizer->find_movies()) {
             $ok++;
             $season = $term->readline("Season ? > ",$season);
             $episode = $term->readline("Episode ? > ",$episode);
-            if ($season =~ /\D/ || $episode =~ /\D/ || $season < 1 || $episode < 1) {
-                say "Please, use only positive numeric values !";
+            if ($season =~ /\D/ || $episode =~ /\D/ || $season eq '' || $episode eq '') {
+                say "Please, use only numeric values !";
                 say "";
-                $season = $episode = undef;
+                $ok = 0;
                 next;
             }
-            if (!$term->readline("is it season ".$season." episode ".$episode." ? (Y/n) > ","y") eq "y") {
-                $season = $episode = undef;
+            if (!($term->readline("is it season ".$season." episode ".$episode." ? (Y/n) > ","y") eq "y")) {
+                $ok = 0;
             }
         }
     }
