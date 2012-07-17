@@ -1,6 +1,13 @@
 package Movies::Organizer;
 
-# ABSTRACT: Organize your movie using imdb
+# ABSTRACT: Organize your movies using imdb
+
+=head1 SYNOPSIS
+
+    movies_organizer -h
+    movies_organizer --from /movies/to/rename --to /movies_well_named
+
+=cut
 
 use strict;
 use warnings;
