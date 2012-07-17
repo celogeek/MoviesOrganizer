@@ -98,7 +98,7 @@ sub find_movies {
 
 sub filter_title {
     my ($self, $file) = @_;
-    my ($volume, $dir, $movie) = File::Spec->splitpath($file);
+    my (undef, undef, $movie) = File::Spec->splitpath($file);
     my @words_ok;
     for my $word(split(/\W+/x, $movie)) {
         for my $filter(@{$self->_filter_words}) {
@@ -120,7 +120,7 @@ sub fetch_movie {
 sub move_movie {
     my ($self, %options) = @_;
     my ($term, $file, $imdb, $title, $season, $episode) = @options{qw/term file imdb title season episode/};
-    my ($volume, $dir, $movie) = File::Spec->splitpath($file);
+    my (undef, undef, $movie) = File::Spec->splitpath($file);
     my ($season_part, $episode_part);
     my $is_series = $imdb->kind =~ /series/;
 
