@@ -84,6 +84,6 @@ for my $movie($organizer->find_movies()) {
         }
     }
 
-    $organizer->move_movie($term, $movie, $imdb, $movie_title, $season, $episode);
+    $organizer->move_movie(term => $term, movie => $movie, imdb => $imdb, movie_title => $movie_title, season => $season, episode => $episode);
     $episode++ if defined $episode;
 }

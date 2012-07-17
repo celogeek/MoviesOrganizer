@@ -100,9 +100,9 @@ sub filter_title {
     my ($self, $file) = @_;
     my ($volume, $dir, $movie) = File::Spec->splitpath($file);
     my @words_ok;
-    for my $word(split(/\W+/, $movie)) {
+    for my $word(split(/\W+/x, $movie)) {
         for my $filter(@{$self->_filter_words}) {
-            $word =~ m/^$filter$/i
+            $word =~ m/^$filter$/ix
                 and goto SKIP_WORD;
         }
         push @words_ok, $word;
@@ -114,11 +114,12 @@ sub filter_title {
 sub fetch_movie {
     my ($self, $search) = @_;
 
-    IMDB::Film->new(crit => $search);
+    return IMDB::Film->new(crit => $search);
 }
 
 sub move_movie {
-    my ($self, $term, $file, $imdb, $title, $season, $episode) = @_;
+    my ($self, %options) = @_;
+    my ($term, $file, $imdb, $title, $season, $episode) = @options{qw/term file imdb title season episode/};
     my ($volume, $dir, $movie) = File::Spec->splitpath($file);
     my ($season_part, $episode_part);
     my $is_series = $imdb->kind =~ /series/;
@@ -129,13 +130,13 @@ sub move_movie {
     }
 
     #extract ext
-    my ($ext) = $movie =~ m/\.([^\.]+)$/;
+    my ($ext) = $movie =~ m/\.([^\.]+)$/x;
     $ext = "avi" unless defined $ext;
 
     #fix title space
-    $title =~ s/\W+/ /g;
-    $title =~ s/^\s+|\s+$//g;
-    $title =~ s/\s+(\w)/.\u$1/g; #replace space by dot
+    $title =~ s/\W+/ /gx;
+    $title =~ s/^\s+|\s+$//gx;
+    $title =~ s/\s+(\w)/.\u$1/gx; #replace space by dot
 
 
     #create destination
@@ -146,7 +147,7 @@ sub move_movie {
     make_path($dest, {error => \my $err});
     if (@$err) {
         for my $diag(@$err) {
-            my ($file, $message) = %$diag;
+            my (undef, $message) = %$diag;
             croak "Error : $message\n";
         }
     }
@@ -168,8 +169,8 @@ sub move_movie {
     move($file, $fdest);
     croak "Error occur !" if -e $file || ! -e $fdest;
 
-    $file =~ s/\.[^\.]+$/.srt/;
-    $fdest =~ s/\.[^\.]+$/.srt/;
+    $file =~ s/\.[^\.]+$/.srt/x;
+    $fdest =~ s/\.[^\.]+$/.srt/x;
 
     if (-e $file) {
 
@@ -183,6 +184,7 @@ sub move_movie {
         croak "Error occur !" if -e $file || ! -e $fdest;
 
     }
+    return;
 }
 
 1;
