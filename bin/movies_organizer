@@ -8,14 +8,14 @@ use warnings;
 
 # VERSION
 
-use MoviesOrganizer;
+use Movies::Organizer;
 use Carp;
 use Data::Dumper;
 use Term::ReadLine;
 use 5.014;
 use IMDB::Film;
 
-my $organizer = MoviesOrganizer->new_with_options;
+my $organizer = Movies::Organizer->new_with_options;
 
 my $term = Term::ReadLine->new;
 my ($imdb, $movie_title, $season, $episode);

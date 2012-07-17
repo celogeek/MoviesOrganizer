@@ -1,4 +1,4 @@
-package MoviesOrganizer;
+package Movies::Organizer;
 
 # ABSTRACT: Organize your movie using imdb
 
