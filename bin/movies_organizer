@@ -3,6 +3,13 @@
 # PODNAME: movies_organizer
 # ABSTRACT: organize your movie specialy for boxee
 
+=head1 SYNOPSIS
+
+    movies_organizer -h
+    movies_organizer --from /movies/to/rename --to /movies_well_named
+
+=cut
+
 use strict;
 use warnings;
 
