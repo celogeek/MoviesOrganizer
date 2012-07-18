@@ -4,7 +4,7 @@ Movies::Organizer - Organize your movies using imdb
 
 # VERSION
 
-version 0.5
+version 0.6
 
 # SYNOPSIS
 
