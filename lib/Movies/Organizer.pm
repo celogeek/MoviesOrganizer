@@ -16,7 +16,7 @@ use warnings;
 
 use Moo;
 use MooX::Options;
-use File::Path 'make_path';
+use File::Path 2.08 'make_path';
 use Carp;
 use Data::Dumper;
 use File::Glob ':globally';
