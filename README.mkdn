@@ -4,7 +4,7 @@ Movies::Organizer - Organize your movies using imdb
 
 # VERSION
 
-version 0.8
+version 0.9
 
 # SYNOPSIS
 
@@ -36,7 +36,7 @@ Run the tools, and rename properly your movies.
 # BUGS
 
 Please report any bugs or feature requests on the bugtracker website
-https://github.com/celogeek/MoviesOrganizer/issues
+http://tasks.celogeek.com/projects/perl-modules-movies-organizer
 
 When submitting a bug or request, please include a test-file or a
 patch to an existing test-file that illustrates the bug or desired
