@@ -67,58 +67,58 @@ option 'min_size' => (
 );
 
 option 'with_aka' => (
-    is => 'ro',
-    default => sub { 0 },
-    doc => 'show alsa known as for movies title',
+    is      => 'ro',
+    default => sub {0},
+    doc     => 'show alsa known as for movies title',
 );
 
 has '_filter_words' => (
     is      => 'ro',
     default => sub {
-        [
-            qw/
-              french
-              english
-              x264
-              720p
-              1080p
-              bluray
-              avi
-              mkv
-              divx
-              bdrip
-              xvid
-              brrip
-              ac3
-              multi
-              truefrench
-              dts
-              hdma
-              hdtv
-              hdrip
-              m2ts
-              s\d+
-              e\d+
-              s\d+e\d+
-              /
+        [   qw/
+                french
+                english
+                x264
+                720p
+                1080p
+                bluray
+                avi
+                mkv
+                divx
+                bdrip
+                xvid
+                brrip
+                ac3
+                multi
+                truefrench
+                dts
+                hdma
+                hdtv
+                hdrip
+                m2ts
+                s\d+
+                e\d+
+                s\d+e\d+
+                /
         ];
     },
 );
 
 has '_rs' => (
-    is => 'lazy',
+    is      => 'ro',
+    default => sub {
+        my ($self) = @_;
+        my $rs = WWW::REST->new('http://imdbapi.org/');
+        $rs->dispatch(
+            sub {
+                my $self = shift;
+                croak $self->status_line if $self->is_error;
+                return decode_json( $self->content );
+            }
+        );
+        return $rs;
+    }
 );
-
-sub _build__rs {
-    my ($self) = @_;
-    my $rs = WWW::REST->new('http://imdbapi.org/');
-    $rs->dispatch(sub {
-            my $self = shift;
-            die $self->status_line if $self->is_error;
-            return decode_json($self->content);
-    }); 
-    return $rs;
-}
 
 =method find_movies
 
@@ -151,7 +151,7 @@ sub filter_title {
     my ( $self, $file ) = @_;
     my ( undef, undef, $movie ) = File::Spec->splitpath($file);
     my @words_ok;
-  SKIP_WORD: for my $word ( split( /\W+/x, $movie ) ) {
+SKIP_WORD: for my $word ( split( /\W+/x, $movie ) ) {
         for my $filter ( @{ $self->_filter_words } ) {
             next SKIP_WORD if $word =~ m/^$filter$/ix;
         }
@@ -168,8 +168,8 @@ move the movie to the destination with the right name, that wil ease your classm
 
 sub move_movie {
     my ( $self, %options ) = @_;
-    my ( $term, $file, $imdb, $title, $season, $episode ) =
-      @options{qw/term file imdb title season episode/};
+    my ( $term, $file, $imdb, $title, $season, $episode )
+        = @options{qw/term file imdb title season episode/};
     my ( undef, undef, $movie ) = File::Spec->splitpath($file);
     my ( $season_part, $episode_part );
     my $is_series = $imdb->{type} eq 'TVS';
@@ -189,7 +189,8 @@ sub move_movie {
     $title =~ s/\s+(\w)/.\u$1/gx;    #replace space by dot
 
     #create destination
-    my $dest = File::Spec->catfile( $self->to, ucfirst( $imdb->{type} eq 'TVS' ? 'Tv series' : 'Movie' ) );
+    my $dest = File::Spec->catfile( $self->to,
+        ucfirst( $imdb->{type} eq 'TVS' ? 'Tv series' : 'Movie' ) );
     if ($is_series) {
         $dest = File::Spec->catfile( $dest, $title, $season_part );
     }
@@ -253,13 +254,12 @@ sub run {
         say "";
         say "Organize : $movie";
         my $another_episode;
-        if (
-               defined $imdb
+        if (   defined $imdb
             && $imdb->{type} eq 'TVS'
             && $term->readline(
                 "is it another episode of " . $movie_title . " ? (Y/n) > ",
                 "y" ) eq "y"
-          )
+            )
         {
             $another_episode = 1;
             say "";
@@ -271,51 +271,68 @@ sub run {
             while ( !defined $imdb ) {
                 my $imdb_search = $term->readline( "IMDB Search > ",
                     $self->filter_title($movie) );
-                my $imdb_search_key = $imdb_search =~ /^tt\d+/ ? 'id' : 'q';
+                my $imdb_search_key = $imdb_search =~ /^tt\d+/x ? 'id' : 'q';
 
-                my $imdb_search_year = $term->readline("Movie/Series Year > ");
+                my $imdb_search_year
+                    = $term->readline("Movie/Series Year > ");
 
-                my @imdb_search_params = ($imdb_search_key => $imdb_search, limit => 1, plot => qw/full/, episode => 0);
-                push @imdb_search_params, year => $imdb_search_year, yg => 1 if $imdb_search_year ne '';
+                my @imdb_search_params = (
+                    $imdb_search_key => $imdb_search,
+                    limit            => 1,
+                    plot             => qw/full/,
+                    episode          => 0
+                );
+                push @imdb_search_params,
+                    year => $imdb_search_year,
+                    yg   => 1
+                    if $imdb_search_year ne '';
 
                 $imdb = $self->_rs->get(@imdb_search_params);
 
                 $imdb = undef if $imdb->{error};
                 if ($imdb) {
                     say "Movie    : ", $imdb->{title};
-                    say "Aka      : ", join( ', ', map { utf8::encode($_); $_ } @{ $imdb->{also_known_as} // [] } ) if $self->with_aka;
-                    say "Kind     : ", $imdb->{type} eq 'TVS' ? 'Tv Serie' : 'Movie';
+                    say "Aka      : ",
+                        join( ', ',
+                        map { utf8::encode($_); $_ } ## no critic (ProhibitComplexMappings)
+                            @{ $imdb->{also_known_as} // [] } )
+                        if $self->with_aka;
+                    say "Kind     : ",
+                        $imdb->{type} eq 'TVS' ? 'Tv Serie' : 'Movie';
                     say "Year     : ", $imdb->{year};
                     say "Plot     : ", $imdb->{plot};
                     say "Directory: ",
-                      join( ', ', @{ $imdb->{directors} // [] } );
+                        join( ', ', @{ $imdb->{directors} // [] } );
                     say "Cast     : ",
-                      join( ', ',
-                          @{ $imdb->{actors} // [] } );
-                    say "Genre    : ", join( ', ', @{ $imdb->{genres} // [] } );
-                    say "Duration : ", join( ', ', @ { $imdb->{runtime} // [] } );
-                    say "Language : ", join( ', ', @{ $imdb->{language} // [] } );
+                        join( ', ', @{ $imdb->{actors} // [] } );
+                    say "Genre    : ",
+                        join( ', ', @{ $imdb->{genres} // [] } );
+                    say "Duration : ",
+                        join( ', ', @{ $imdb->{runtime} // [] } );
+                    say "Language : ",
+                        join( ', ', @{ $imdb->{language} // [] } );
                     say "";
-                    my $correct =
-                      $term->readline( "Is it correct ? (Y/n) > ", "y" );
+                    my $correct
+                        = $term->readline( "Is it correct ? (Y/n) > ", "y" );
                     $imdb = undef unless $correct eq 'y';
                 }
             }
             $movie_title = $imdb->{title};
-            my @movie_titles = ( $movie_title );
-            push @movie_titles, @{ $imdb->{also_known_as} // [] } if $self->with_aka;
+            my @movie_titles = ($movie_title);
+            push @movie_titles, @{ $imdb->{also_known_as} // [] }
+                if $self->with_aka;
             if ( @movie_titles > 1 ) {
                 my $choice;
                 say "Select best title : ";
-                for ( my $i = 1 ; $i <= @movie_titles ; $i++ ) {
+                for ( my $i = 1; $i <= @movie_titles; $i++ ) {
                     say sprintf( "    %d) %s", $i, $movie_titles[ $i - 1 ] );
                 }
                 while ( !defined $choice ) {
                     $choice = $term->readline( " > ", 1 );
                     $choice = undef
-                      if $choice =~ /\D/x
-                      || $choice < 1
-                      || $choice > @movie_titles;
+                        if $choice =~ /\D/x
+                        || $choice < 1
+                        || $choice > @movie_titles;
                 }
                 $movie_title = $movie_titles[ $choice - 1 ];
                 say "";
@@ -337,18 +354,16 @@ sub run {
                     $ok = 0;
                     next;
                 }
-                if (
-                    !(
-                        $term->readline(
+                if (!(  $term->readline(
                             "is it season "
-                              . $season
-                              . " episode "
-                              . $episode
-                              . " ? (Y/n) > ",
+                                . $season
+                                . " episode "
+                                . $episode
+                                . " ? (Y/n) > ",
                             "y"
                         ) eq "y"
                     )
-                  )
+                    )
                 {
                     $ok = 0;
                 }
@@ -356,12 +371,12 @@ sub run {
         }
 
         $self->move_movie(
-            term        => $term,
-            file       => $movie,
-            imdb        => $imdb,
-            title => $movie_title,
-            season      => $season,
-            episode     => $episode
+            term    => $term,
+            file    => $movie,
+            imdb    => $imdb,
+            title   => $movie_title,
+            season  => $season,
+            episode => $episode
         );
         $episode++ if defined $episode;
     }
