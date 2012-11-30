@@ -24,8 +24,10 @@ use File::Spec;
 use File::Copy;
 use Term::ReadLine;
 use Term::ReadLine::Perl;
-use IMDB::Film;
+use WWW::REST;
+use JSON::XS;
 use 5.010;
+use utf8;
 
 option 'from' => (
     doc => 'Source directory to organize',
@@ -95,10 +97,28 @@ has '_filter_words' => (
               hdtv
               hdrip
               m2ts
+              s\d+
+              e\d+
+              s\d+e\d+
               /
         ];
     },
 );
+
+has '_rs' => (
+    is => 'lazy',
+);
+
+sub _build__rs {
+    my ($self) = @_;
+    my $rs = WWW::REST->new('http://imdbapi.org/');
+    $rs->dispatch(sub {
+            my $self = shift;
+            die $self->status_line if $self->is_error;
+            return decode_json($self->content);
+    }); 
+    return $rs;
+}
 
 =method find_movies
 
@@ -140,18 +160,6 @@ sub filter_title {
     return join( ' ', @words_ok );
 }
 
-=method fetch_movie
-
-Return IMDB search of your movie
-
-=cut
-
-sub fetch_movie {
-    my ( $self, $search ) = @_;
-
-    return IMDB::Film->new( crit => $search );
-}
-
 =method move_movie
 
 move the movie to the destination with the right name, that wil ease your classment with XMDB tools type.
@@ -164,7 +172,7 @@ sub move_movie {
       @options{qw/term file imdb title season episode/};
     my ( undef, undef, $movie ) = File::Spec->splitpath($file);
     my ( $season_part, $episode_part );
-    my $is_series = $imdb->kind =~ /series/;
+    my $is_series = $imdb->{type} eq 'TVS';
 
     if ($is_series) {
         $season_part  = sprintf( "S%02d", $season );
@@ -181,7 +189,7 @@ sub move_movie {
     $title =~ s/\s+(\w)/.\u$1/gx;    #replace space by dot
 
     #create destination
-    my $dest = File::Spec->catfile( $self->to, ucfirst( $imdb->kind ) );
+    my $dest = File::Spec->catfile( $self->to, ucfirst( $imdb->{type} eq 'TVS' ? 'Tv series' : 'Movie' ) );
     if ($is_series) {
         $dest = File::Spec->catfile( $dest, $title, $season_part );
     }
@@ -198,7 +206,7 @@ sub move_movie {
         $ext = join( '.', $season_part . $episode_part, $ext );
     }
     else {
-        $ext = join( '.', "(" . $imdb->year . ")", $ext );
+        $ext = join( '.', "(" . $imdb->{year} . ")", $ext );
     }
     my $fdest = File::Spec->catfile( $dest, join( '.', $title, $ext ) );
 
@@ -247,7 +255,7 @@ sub run {
         my $another_episode;
         if (
                defined $imdb
-            && $imdb->kind =~ /series/
+            && $imdb->{type} eq 'TVS'
             && $term->readline(
                 "is it another episode of " . $movie_title . " ? (Y/n) > ",
                 "y" ) eq "y"
@@ -263,32 +271,39 @@ sub run {
             while ( !defined $imdb ) {
                 my $imdb_search = $term->readline( "IMDB Search > ",
                     $self->filter_title($movie) );
-                $imdb = $self->fetch_movie($imdb_search);
-                $imdb = undef if !$imdb->status;
+                my $imdb_search_key = $imdb_search =~ /^tt\d+/ ? 'id' : 'q';
+
+                my $imdb_search_year = $term->readline("Movie/Series Year > ");
+
+                my @imdb_search_params = ($imdb_search_key => $imdb_search, limit => 1, plot => qw/full/, episode => 0);
+                push @imdb_search_params, year => $imdb_search_year, yg => 1 if $imdb_search_year ne '';
+
+                $imdb = $self->_rs->get(@imdb_search_params);
+
+                $imdb = undef if $imdb->{error};
                 if ($imdb) {
-                    say "Movie    : ", $imdb->title;
-                    say "Aka      : ", join( ', ', @{ $imdb->also_known_as } ) if $self->with_aka;
-                    say "Kind     : ", $imdb->kind;
-                    say "Year     : ", $imdb->year;
-                    say "Plot     : ", $imdb->plot;
+                    say "Movie    : ", $imdb->{title};
+                    say "Aka      : ", join( ', ', map { utf8::encode($_); $_ } @{ $imdb->{also_known_as} // [] } ) if $self->with_aka;
+                    say "Kind     : ", $imdb->{type} eq 'TVS' ? 'Tv Serie' : 'Movie';
+                    say "Year     : ", $imdb->{year};
+                    say "Plot     : ", $imdb->{plot};
                     say "Directory: ",
-                      join( ', ', map { $_->{name} } @{ $imdb->directors } );
+                      join( ', ', @{ $imdb->{directors} // [] } );
                     say "Cast     : ",
                       join( ', ',
-                        map { $_->{name} . "(" . $_->{role} . ")" }
-                          @{ $imdb->cast } );
-                    say "Genre    : ", join( ', ', @{ $imdb->genres } );
-                    say "Duration : ", $imdb->duration;
-                    say "Language : ", join( ', ', @{ $imdb->language } );
+                          @{ $imdb->{actors} // [] } );
+                    say "Genre    : ", join( ', ', @{ $imdb->{genres} // [] } );
+                    say "Duration : ", join( ', ', @ { $imdb->{runtime} // [] } );
+                    say "Language : ", join( ', ', @{ $imdb->{language} // [] } );
                     say "";
                     my $correct =
                       $term->readline( "Is it correct ? (Y/n) > ", "y" );
                     $imdb = undef unless $correct eq 'y';
                 }
             }
-            $movie_title = $imdb->title;
+            $movie_title = $imdb->{title};
             my @movie_titles = ( $movie_title );
-            push @movie_titles, @{ $imdb->also_known_as } if $self->with_aka;
+            push @movie_titles, @{ $imdb->{also_known_as} // [] } if $self->with_aka;
             if ( @movie_titles > 1 ) {
                 my $choice;
                 say "Select best title : ";
@@ -306,7 +321,7 @@ sub run {
                 say "";
             }
         }
-        if ( $imdb->kind =~ /series/ ) {
+        if ( $imdb->{type} eq 'TVS' ) {
             my $ok = 0;
             while ( !$ok || !defined $season || !defined $episode ) {
                 $ok++;
