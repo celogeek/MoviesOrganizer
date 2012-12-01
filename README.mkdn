@@ -4,7 +4,7 @@ Movies::Organizer - Organize your movies using imdb
 
 # VERSION
 
-version 0.9
+version 1.0
 
 # SYNOPSIS
 
@@ -20,10 +20,6 @@ pass thought 'from' directory, and get all movies files. It will take file bigge
 ## filter\_title
 
 Extract words from the file name, filter any common bad one, and return filtered title.
-
-## fetch\_movie
-
-Return IMDB search of your movie
 
 ## move\_movie
 
