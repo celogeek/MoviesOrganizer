@@ -109,11 +109,13 @@ has '_rs' => (
     default => sub {
         my ($self) = @_;
         my $rs = WWW::REST->new('http://imdbapi.org/');
+        $rs->_ua->agent('Mozilla/5.0');
         $rs->dispatch(
             sub {
                 my $self = shift;
                 croak $self->status_line if $self->is_error;
-                return decode_json( $self->content );
+                my $ct = decode_json( $self->content );
+                return ref $ct eq 'ARRAY' ? $ct->[0] : $ct;
             }
         );
         return $rs;

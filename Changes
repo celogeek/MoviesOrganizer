@@ -1,5 +1,8 @@
 {{$NEXT}}
 
+    Fix UserAgent
+    Get first element for imdbapi response if multiple one possible
+
 1.0       2012-12-01 00:59:47 Europe/Paris
 
     Use imdbapi.org
