@@ -293,16 +293,16 @@ sub run {
 
                 $imdb = undef if $imdb->{error};
                 if ($imdb) {
-                    say "Movie    : ", $imdb->{title};
+                    say "Movie    : ", $imdb->{title} // "";
                     say "Aka      : ",
                         join( ', ',
                         map { utf8::encode($_); $_ } ## no critic (ProhibitComplexMappings)
                             @{ $imdb->{also_known_as} // [] } )
                         if $self->with_aka;
                     say "Kind     : ",
-                        $imdb->{type} eq 'TVS' ? 'Tv Serie' : 'Movie';
-                    say "Year     : ", $imdb->{year};
-                    say "Plot     : ", $imdb->{plot};
+                        ($imdb->{type} // "") eq 'TVS' ? 'Tv Serie' : 'Movie';
+                    say "Year     : ", $imdb->{year} // "";
+                    say "Plot     : ", $imdb->{plot} // "";
                     say "Directory: ",
                         join( ', ', @{ $imdb->{directors} // [] } );
                     say "Cast     : ",
